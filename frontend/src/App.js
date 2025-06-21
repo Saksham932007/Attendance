@@ -61,7 +61,7 @@ function App() {
       if (response.ok) {
         await fetchDashboardStats();
         setError(null);
-        alert('Sample data generated successfully!');
+        alert('Sample data with 100 employees generated successfully!');
       } else {
         throw new Error(data.detail || 'Failed to generate sample data');
       }
