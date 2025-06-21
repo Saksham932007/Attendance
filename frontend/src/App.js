@@ -213,7 +213,7 @@ function App() {
     <div className="space-y-8">
       {/* Hero Section */}
       <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-8">
-        <h1 className="text-4xl font-bold mb-4">AI-Powered Attendance Analyzer</h1>
+        <h1 className="text-4xl font-bold mb-4">Attendance Management System</h1>
         <p className="text-xl opacity-90 mb-6">
           Manual attendance tracking system with 70% attendance threshold analysis for employee management
         </p>
