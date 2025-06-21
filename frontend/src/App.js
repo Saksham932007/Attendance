@@ -30,6 +30,27 @@ function App() {
     }
   };
 
+  const fetchEmployeesData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employees`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setEmployeesData(data);
+        setError(null);
+      } else {
+        throw new Error(data.message || 'Failed to fetch employees data');
+      }
+    } catch (err) {
+      console.error('Error fetching employees data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const generateSampleData = async () => {
     setLoading(true);
     setError(null);
