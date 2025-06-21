@@ -664,6 +664,7 @@ function App() {
         )}
 
         {activeTab === 'dashboard' && renderDashboard()}
+        {activeTab === 'employees' && renderEmployees()}
         {activeTab === 'results' && renderResults()}
       </main>
     </div>
