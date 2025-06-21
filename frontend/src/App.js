@@ -340,9 +340,9 @@ function App() {
         <h3 className="text-lg font-semibold text-blue-900 mb-3">How to Use</h3>
         <div className="space-y-2 text-blue-800">
           <p><strong>Step 1:</strong> Generate sample data to populate the system with 100 realistic employee records</p>
-          <p><strong>Step 2:</strong> Run AI analysis to process attendance data with 70% threshold rules</p>
-          <p><strong>Step 3:</strong> Review detailed results with AI-powered insights and recommendations</p>
-          <p><strong>Step 4:</strong> Browse employee directory with contact details and attendance summaries</p>
+          <p><strong>Step 2:</strong> Calculate attendance metrics with 70% threshold rules</p>
+          <p><strong>Step 3:</strong> Review detailed results and attendance summaries</p>
+          <p><strong>Step 4:</strong> Browse employee directory and add new employees manually</p>
         </div>
       </div>
     </div>
