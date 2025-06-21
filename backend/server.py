@@ -9,14 +9,13 @@ import json
 import asyncio
 import uuid
 from motor.motor_asyncio import AsyncIOMotorClient
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 import logging
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Attendance Analyzer", version="1.0.0")
+app = FastAPI(title="Attendance Management System", version="1.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -34,12 +33,16 @@ DB_NAME = os.environ.get('DB_NAME', 'attendance_system')
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
-# Gemini AI setup
-GEMINI_API_KEY = "AIzaSyAYYBn61_8r8tnVYUTqVxKvcy7PYQa5Jow"
-
 # Pydantic models
 class Employee(BaseModel):
     employee_id: str
+    name: str
+    department: str
+    position: str
+    email: str
+    phone: str
+
+class NewEmployee(BaseModel):
     name: str
     department: str
     position: str
@@ -72,7 +75,6 @@ class AnalysisResult(BaseModel):
     late_days: int
     attendance_percentage: float
     status: str  # meets_threshold, below_threshold
-    ai_insights: str
 
 # Helper functions
 def generate_sample_data():
@@ -190,50 +192,6 @@ def generate_sample_data():
         late_threshold_minutes=30
     )
 
-async def analyze_with_gemini(employee_data: Dict, attendance_summary: Dict) -> str:
-    """Use Gemini AI to analyze attendance patterns and provide insights"""
-    try:
-        # Create a new chat instance for this analysis
-        chat = LlmChat(
-            api_key=GEMINI_API_KEY,
-            session_id=f"attendance_analysis_{uuid.uuid4()}",
-            system_message="You are an expert HR analytics assistant. Analyze attendance data and provide professional insights about employee performance, patterns, and recommendations."
-        ).with_model("gemini", "gemini-2.0-flash")
-        
-        # Create analysis prompt
-        prompt = f"""
-        Analyze the following employee attendance data and provide insights:
-        
-        Employee: {employee_data['name']} ({employee_data['employee_id']})
-        Department: {employee_data['department']}
-        Position: {employee_data['position']}
-        
-        Attendance Summary:
-        - Total Working Days: {attendance_summary['total_days']}
-        - Present Days: {attendance_summary['present_days']}
-        - Absent Days: {attendance_summary['absent_days']}
-        - Late Days: {attendance_summary['late_days']}
-        - Attendance Percentage: {attendance_summary['attendance_percentage']:.1f}%
-        - Average Hours Worked: {attendance_summary.get('avg_hours', 0):.1f} hours/day
-        
-        Please provide:
-        1. Overall attendance assessment (2-3 sentences)
-        2. Key patterns or concerns (if any)
-        3. Specific recommendations for improvement (if attendance < 70%)
-        4. Recognition for good performance (if attendance >= 85%)
-        
-        Keep the response professional, constructive, and under 200 words.
-        """
-        
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
-        
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error analyzing with Gemini: {str(e)}")
-        return f"Analysis unavailable. Basic assessment: {'Meets expectations' if attendance_summary['attendance_percentage'] >= 70 else 'Below standard - requires attention'}."
-
 def calculate_attendance_metrics(employee: Employee, records: List[AttendanceRecord]) -> Dict:
     """Calculate attendance metrics for an employee"""
     employee_records = [r for r in records if r.employee_id == employee.employee_id]
@@ -259,10 +217,28 @@ def calculate_attendance_metrics(employee: Employee, records: List[AttendanceRec
         "status": "meets_threshold" if attendance_percentage >= 70 else "below_threshold"
     }
 
+async def generate_next_employee_id() -> str:
+    """Generate the next employee ID"""
+    # Get the highest employee ID
+    employees_cursor = db.employees.find({}, {"employee_id": 1}).sort("employee_id", -1).limit(1)
+    employees_list = await employees_cursor.to_list(length=1)
+    
+    if not employees_list:
+        return "EMP001"
+    
+    last_id = employees_list[0]["employee_id"]
+    # Extract number and increment
+    try:
+        last_num = int(last_id.replace("EMP", ""))
+        next_num = last_num + 1
+        return f"EMP{next_num:03d}"
+    except:
+        return "EMP001"
+
 # API Routes
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "AI Attendance Analyzer"}
+    return {"status": "healthy", "service": "Attendance Management System"}
 
 @app.get("/api/sample-data")
 async def get_sample_data():
@@ -273,6 +249,7 @@ async def get_sample_data():
         # Store sample data in database
         await db.employees.delete_many({})
         await db.attendance_records.delete_many({})
+        await db.analysis_results.delete_many({})
         
         # Insert employees
         employee_docs = [emp.dict() for emp in sample_data.employees]
@@ -293,9 +270,66 @@ async def get_sample_data():
         logger.error(f"Error generating sample data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/add-employee")
+async def add_employee(employee_data: NewEmployee):
+    """Add a new employee to the system"""
+    try:
+        # Check if email already exists
+        existing_employee = await db.employees.find_one({"email": employee_data.email})
+        if existing_employee:
+            raise HTTPException(status_code=400, detail="Employee with this email already exists")
+        
+        # Generate new employee ID
+        employee_id = await generate_next_employee_id()
+        
+        # Create employee object
+        new_employee = Employee(
+            employee_id=employee_id,
+            name=employee_data.name,
+            department=employee_data.department,
+            position=employee_data.position,
+            email=employee_data.email,
+            phone=employee_data.phone
+        )
+        
+        # Insert into database
+        await db.employees.insert_one(new_employee.dict())
+        
+        return {
+            "message": "Employee added successfully",
+            "employee": new_employee.dict()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding employee: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/employees/{employee_id}")
+async def delete_employee(employee_id: str):
+    """Delete an employee from the system"""
+    try:
+        # Check if employee exists
+        employee = await db.employees.find_one({"employee_id": employee_id})
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        # Delete employee and their attendance records
+        await db.employees.delete_one({"employee_id": employee_id})
+        await db.attendance_records.delete_many({"employee_id": employee_id})
+        
+        return {"message": f"Employee {employee_id} deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting employee: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/analyze-attendance")
 async def analyze_attendance():
-    """Analyze attendance data and generate AI-powered insights"""
+    """Analyze attendance data and generate reports"""
     try:
         # Get employees and attendance records from database
         employees_cursor = db.employees.find({})
@@ -318,9 +352,6 @@ async def analyze_attendance():
             # Calculate basic metrics
             metrics = calculate_attendance_metrics(employee, records)
             
-            # Get AI insights
-            ai_insights = await analyze_with_gemini(employee.dict(), metrics)
-            
             # Create analysis result
             result = AnalysisResult(
                 employee_id=employee.employee_id,
@@ -331,8 +362,7 @@ async def analyze_attendance():
                 absent_days=metrics["absent_days"],
                 late_days=metrics["late_days"],
                 attendance_percentage=metrics["attendance_percentage"],
-                status=metrics["status"],
-                ai_insights=ai_insights
+                status=metrics["status"]
             )
             
             analysis_results.append(result)
@@ -363,68 +393,6 @@ async def analyze_attendance():
         
     except Exception as e:
         logger.error(f"Error analyzing attendance: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/attendance-report")
-async def get_attendance_report():
-    """Get the latest attendance analysis report"""
-    try:
-        # Get analysis results from database
-        results_cursor = db.analysis_results.find({})
-        results_list = await results_cursor.to_list(length=None)
-        
-        if not results_list:
-            return {"message": "No analysis results found. Please run attendance analysis first.", "results": []}
-        
-        # Convert ObjectId to string for JSON serialization
-        for result in results_list:
-            if '_id' in result:
-                result['_id'] = str(result['_id'])
-        
-        # Calculate summary
-        total_employees = len(results_list)
-        meeting_threshold = len([r for r in results_list if r["status"] == "meets_threshold"])
-        below_threshold = total_employees - meeting_threshold
-        avg_attendance = sum(r["attendance_percentage"] for r in results_list) / total_employees if total_employees > 0 else 0
-        
-        return {
-            "summary": {
-                "total_employees": total_employees,
-                "meeting_70_percent_threshold": meeting_threshold,
-                "below_threshold": below_threshold,
-                "average_attendance_rate": round(avg_attendance, 1)
-            },
-            "results": results_list
-        }
-        
-    except Exception as e:
-        logger.error(f"Error getting attendance report: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/upload-attendance")
-async def upload_attendance_data(data: AttendanceData):
-    """Upload custom attendance data for analysis"""
-    try:
-        # Clear existing data
-        await db.employees.delete_many({})
-        await db.attendance_records.delete_many({})
-        await db.analysis_results.delete_many({})
-        
-        # Insert new data
-        employee_docs = [emp.dict() for emp in data.employees]
-        await db.employees.insert_many(employee_docs)
-        
-        record_docs = [rec.dict() for rec in data.attendance_records]
-        await db.attendance_records.insert_many(record_docs)
-        
-        return {
-            "message": "Attendance data uploaded successfully",
-            "employees_count": len(data.employees),
-            "records_count": len(data.attendance_records)
-        }
-        
-    except Exception as e:
-        logger.error(f"Error uploading attendance data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/employees")
@@ -496,6 +464,68 @@ async def get_all_employees():
         
     except Exception as e:
         logger.error(f"Error getting employees: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/attendance-report")
+async def get_attendance_report():
+    """Get the latest attendance analysis report"""
+    try:
+        # Get analysis results from database
+        results_cursor = db.analysis_results.find({})
+        results_list = await results_cursor.to_list(length=None)
+        
+        if not results_list:
+            return {"message": "No analysis results found. Please run attendance analysis first.", "results": []}
+        
+        # Convert ObjectId to string for JSON serialization
+        for result in results_list:
+            if '_id' in result:
+                result['_id'] = str(result['_id'])
+        
+        # Calculate summary
+        total_employees = len(results_list)
+        meeting_threshold = len([r for r in results_list if r["status"] == "meets_threshold"])
+        below_threshold = total_employees - meeting_threshold
+        avg_attendance = sum(r["attendance_percentage"] for r in results_list) / total_employees if total_employees > 0 else 0
+        
+        return {
+            "summary": {
+                "total_employees": total_employees,
+                "meeting_70_percent_threshold": meeting_threshold,
+                "below_threshold": below_threshold,
+                "average_attendance_rate": round(avg_attendance, 1)
+            },
+            "results": results_list
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting attendance report: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/upload-attendance")
+async def upload_attendance_data(data: AttendanceData):
+    """Upload custom attendance data for analysis"""
+    try:
+        # Clear existing data
+        await db.employees.delete_many({})
+        await db.attendance_records.delete_many({})
+        await db.analysis_results.delete_many({})
+        
+        # Insert new data
+        employee_docs = [emp.dict() for emp in data.employees]
+        await db.employees.insert_many(employee_docs)
+        
+        record_docs = [rec.dict() for rec in data.attendance_records]
+        await db.attendance_records.insert_many(record_docs)
+        
+        return {
+            "message": "Attendance data uploaded successfully",
+            "employees_count": len(data.employees),
+            "records_count": len(data.attendance_records)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error uploading attendance data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/dashboard-stats")
