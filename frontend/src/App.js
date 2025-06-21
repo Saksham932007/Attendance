@@ -38,6 +38,71 @@ function App() {
     }
   };
 
+  const addEmployee = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/add-employee`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(addEmployeeForm),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setShowAddEmployeeModal(false);
+        setAddEmployeeForm({
+          name: '',
+          department: '',
+          position: '',
+          email: '',
+          phone: ''
+        });
+        await fetchEmployeesData();
+        await fetchDashboardStats();
+        alert('Employee added successfully!');
+      } else {
+        throw new Error(data.detail || 'Failed to add employee');
+      }
+    } catch (err) {
+      console.error('Error adding employee:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteEmployee = async (employeeId) => {
+    if (!confirm('Are you sure you want to delete this employee?')) {
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employees/${employeeId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        await fetchEmployeesData();
+        await fetchDashboardStats();
+        alert('Employee deleted successfully!');
+      } else {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to delete employee');
+      }
+    } catch (err) {
+      console.error('Error deleting employee:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchEmployeesData = async () => {
     setLoading(true);
     setError(null);
