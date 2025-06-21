@@ -77,35 +77,73 @@ class AnalysisResult(BaseModel):
 # Helper functions
 def generate_sample_data():
     """Generate sample attendance data for demonstration"""
-    employees = [
-        Employee(employee_id="EMP001", name="John Smith", department="Engineering", position="Senior Developer", email="john@company.com"),
-        Employee(employee_id="EMP002", name="Sarah Johnson", department="Marketing", position="Marketing Manager", email="sarah@company.com"),
-        Employee(employee_id="EMP003", name="Mike Chen", department="Engineering", position="Software Engineer", email="mike@company.com"),
-        Employee(employee_id="EMP004", name="Emily Davis", department="HR", position="HR Specialist", email="emily@company.com"),
-        Employee(employee_id="EMP005", name="David Wilson", department="Sales", position="Sales Executive", email="david@company.com"),
-    ]
+    # Generate 100 employees with diverse backgrounds
+    departments = ["Engineering", "Marketing", "Sales", "HR", "Finance", "Operations", "Customer Service", "Product", "Design", "Legal"]
+    positions = {
+        "Engineering": ["Senior Developer", "Software Engineer", "DevOps Engineer", "QA Engineer", "Tech Lead", "Full Stack Developer", "Backend Developer", "Frontend Developer", "Mobile Developer", "Data Engineer"],
+        "Marketing": ["Marketing Manager", "Digital Marketing Specialist", "Content Creator", "SEO Specialist", "Social Media Manager", "Brand Manager", "Marketing Coordinator", "Growth Hacker", "Email Marketing Specialist", "Marketing Analyst"],
+        "Sales": ["Sales Executive", "Account Manager", "Business Development", "Sales Manager", "Inside Sales Rep", "Sales Coordinator", "Key Account Manager", "Sales Analyst", "Territory Manager", "Sales Director"],
+        "HR": ["HR Specialist", "Recruiter", "HR Manager", "Training Coordinator", "Compensation Analyst", "HR Generalist", "Employee Relations", "HR Director", "Talent Acquisition", "HR Assistant"],
+        "Finance": ["Financial Analyst", "Accountant", "Finance Manager", "Budget Analyst", "Tax Specialist", "Audit Specialist", "Financial Controller", "Treasury Analyst", "Cost Analyst", "Finance Director"],
+        "Operations": ["Operations Manager", "Process Analyst", "Operations Coordinator", "Supply Chain Analyst", "Logistics Coordinator", "Operations Specialist", "Project Manager", "Operations Director", "Facility Manager", "Operations Analyst"],
+        "Customer Service": ["Customer Support Rep", "Customer Success Manager", "Support Specialist", "Customer Service Manager", "Technical Support", "Customer Experience", "Call Center Agent", "Support Team Lead", "Customer Advocate", "Service Coordinator"],
+        "Product": ["Product Manager", "Product Owner", "Product Analyst", "Product Designer", "Product Marketing", "Product Coordinator", "Senior Product Manager", "Product Strategist", "Product Specialist", "Product Director"],
+        "Design": ["UI/UX Designer", "Graphic Designer", "Web Designer", "Creative Director", "Design Lead", "Visual Designer", "Product Designer", "Brand Designer", "Motion Designer", "Design Coordinator"],
+        "Legal": ["Legal Counsel", "Paralegal", "Legal Assistant", "Contract Specialist", "Compliance Officer", "Legal Analyst", "General Counsel", "Legal Coordinator", "Intellectual Property", "Legal Director"]
+    }
+    
+    first_names = ["John", "Sarah", "Michael", "Emily", "David", "Jennifer", "Robert", "Jessica", "William", "Ashley", "James", "Amanda", "Christopher", "Melissa", "Daniel", "Michelle", "Matthew", "Kimberly", "Anthony", "Amy", "Mark", "Angela", "Donald", "Helen", "Steven", "Deborah", "Paul", "Rachel", "Andrew", "Carolyn", "Joshua", "Janet", "Kenneth", "Catherine", "Kevin", "Frances", "Brian", "Maria", "George", "Heather", "Edward", "Diane", "Ronald", "Ruth", "Timothy", "Julie", "Jason", "Joyce", "Jeffrey", "Virginia", "Ryan", "Victoria", "Jacob", "Kelly", "Gary", "Christina", "Nicholas", "Joan", "Eric", "Evelyn", "Jonathan", "Lauren", "Stephen", "Judith", "Larry", "Megan", "Justin", "Cheryl", "Scott", "Andrea", "Brandon", "Hannah", "Benjamin", "Jacqueline", "Samuel", "Martha", "Gregory", "Gloria", "Alexander", "Teresa", "Patrick", "Sara", "Frank", "Janice", "Raymond", "Marie", "Jack", "Madison", "Dennis", "Abigail", "Jerry", "Kathryn", "Tyler", "Emma", "Aaron", "Olivia"]
+    
+    last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores", "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts", "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes", "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper", "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson", "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes", "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez"]
+    
+    employees = []
+    
+    for i in range(100):
+        import random
+        employee_id = f"EMP{i+1:03d}"
+        first_name = random.choice(first_names)
+        last_name = random.choice(last_names)
+        name = f"{first_name} {last_name}"
+        department = random.choice(departments)
+        position = random.choice(positions[department])
+        email = f"{first_name.lower()}.{last_name.lower()}@company.com"
+        
+        # Generate realistic phone number
+        area_codes = ["415", "650", "408", "510", "925", "707", "831", "559", "209", "530"]
+        phone = f"({random.choice(area_codes)}) {random.randint(200,999)}-{random.randint(1000,9999)}"
+        
+        employees.append(Employee(
+            employee_id=employee_id,
+            name=name,
+            department=department,
+            position=position,
+            email=email,
+            phone=phone
+        ))
     
     # Generate 30 days of sample attendance data
     attendance_records = []
     start_date = datetime.now() - timedelta(days=30)
     
     for employee in employees:
+        # Assign attendance pattern based on employee ID for consistency
+        emp_num = int(employee.employee_id.replace("EMP", ""))
+        
+        # Create different attendance patterns
+        if emp_num <= 20:  # Top 20% - High performers (90-95% attendance)
+            present_chance = random.uniform(0.90, 0.95)
+        elif emp_num <= 40:  # Next 20% - Good performers (80-89% attendance)
+            present_chance = random.uniform(0.80, 0.89)
+        elif emp_num <= 60:  # Middle 20% - Average performers (70-79% attendance)
+            present_chance = random.uniform(0.70, 0.79)
+        elif emp_num <= 80:  # Next 20% - Below average (60-69% attendance)
+            present_chance = random.uniform(0.60, 0.69)
+        else:  # Bottom 20% - Poor performers (40-59% attendance)
+            present_chance = random.uniform(0.40, 0.59)
+        
         for day in range(30):
             current_date = start_date + timedelta(days=day)
-            if current_date.weekday() < 5:  # Monday to Friday
-                # Simulate different attendance patterns
-                import random
-                
-                if employee.employee_id == "EMP001":  # High performer
-                    present_chance = 0.95
-                elif employee.employee_id == "EMP002":  # Average
-                    present_chance = 0.80
-                elif employee.employee_id == "EMP003":  # Good
-                    present_chance = 0.88
-                elif employee.employee_id == "EMP004":  # Below average
-                    present_chance = 0.65
-                else:  # EMP005 - Poor
-                    present_chance = 0.60
+            if current_date.weekday() < 5:  # Monday to Friday only
                 
                 if random.random() < present_chance:
                     # Present - generate check-in and check-out times
@@ -113,8 +151,8 @@ def generate_sample_data():
                     base_checkout = 17 * 60  # 5:00 PM in minutes
                     
                     # Add some randomness
-                    checkin_minutes = base_checkin + random.randint(-30, 60)
-                    checkout_minutes = base_checkout + random.randint(-30, 60)
+                    checkin_minutes = base_checkin + random.randint(-30, 90)
+                    checkout_minutes = base_checkout + random.randint(-30, 90)
                     
                     checkin_time = f"{checkin_minutes // 60:02d}:{checkin_minutes % 60:02d}"
                     checkout_time = f"{checkout_minutes // 60:02d}:{checkout_minutes % 60:02d}"
