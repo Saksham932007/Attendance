@@ -230,7 +230,7 @@ function App() {
             disabled={loading || !dashboardStats?.employees_count}
             className="bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-800 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Analyzing...' : 'Analyze Attendance'}
+            {loading ? 'Analyzing...' : 'Calculate Attendance'}
           </button>
         </div>
       </div>
