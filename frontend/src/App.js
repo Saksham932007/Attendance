@@ -215,7 +215,7 @@ function App() {
       <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-8">
         <h1 className="text-4xl font-bold mb-4">AI-Powered Attendance Analyzer</h1>
         <p className="text-xl opacity-90 mb-6">
-          Automated attendance tracking with intelligent insights and 70% attendance threshold analysis for 100 employees
+          Manual attendance tracking system with 70% attendance threshold analysis for employee management
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <button
