@@ -44,6 +44,7 @@ class Employee(BaseModel):
     department: str
     position: str
     email: str
+    phone: str
 
 class AttendanceRecord(BaseModel):
     employee_id: str
