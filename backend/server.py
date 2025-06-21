@@ -427,6 +427,77 @@ async def upload_attendance_data(data: AttendanceData):
         logger.error(f"Error uploading attendance data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/employees")
+async def get_all_employees():
+    """Get all employees with their attendance summaries"""
+    try:
+        # Get employees and attendance records from database
+        employees_cursor = db.employees.find({})
+        employees_list = await employees_cursor.to_list(length=None)
+        
+        records_cursor = db.attendance_records.find({})
+        records_list = await records_cursor.to_list(length=None)
+        
+        if not employees_list:
+            return {"message": "No employees found. Please generate sample data first.", "employees": []}
+        
+        # Convert to Pydantic models
+        employees = [Employee(**emp) for emp in employees_list]
+        records = [AttendanceRecord(**rec) for rec in records_list]
+        
+        # Calculate attendance summary for each employee
+        employee_summaries = []
+        
+        for employee in employees:
+            # Calculate basic metrics
+            metrics = calculate_attendance_metrics(employee, records)
+            
+            # Get recent attendance pattern (last 7 days)
+            recent_records = [r for r in records if r.employee_id == employee.employee_id]
+            recent_records.sort(key=lambda x: x.date, reverse=True)
+            recent_status = "No recent data"
+            
+            if recent_records:
+                recent_7_days = recent_records[:7]
+                present_recent = len([r for r in recent_7_days if r.status in ["present", "late"]])
+                if present_recent >= 6:
+                    recent_status = "Excellent"
+                elif present_recent >= 5:
+                    recent_status = "Good"
+                elif present_recent >= 3:
+                    recent_status = "Average"
+                else:
+                    recent_status = "Poor"
+            
+            employee_summaries.append({
+                "employee_id": employee.employee_id,
+                "name": employee.name,
+                "department": employee.department,
+                "position": employee.position,
+                "email": employee.email,
+                "phone": employee.phone,
+                "total_days": metrics["total_days"],
+                "present_days": metrics["present_days"],
+                "absent_days": metrics["absent_days"],
+                "late_days": metrics["late_days"],
+                "attendance_percentage": round(metrics["attendance_percentage"], 1),
+                "status": metrics["status"],
+                "recent_status": recent_status,
+                "avg_hours": round(metrics["avg_hours"], 1)
+            })
+        
+        # Sort by attendance percentage (descending)
+        employee_summaries.sort(key=lambda x: x["attendance_percentage"], reverse=True)
+        
+        return {
+            "total_employees": len(employee_summaries),
+            "employees": employee_summaries
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting employees: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/dashboard-stats")
 async def get_dashboard_stats():
     """Get dashboard statistics"""
