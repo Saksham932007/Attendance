@@ -274,6 +274,239 @@ function App() {
     </div>
   );
 
+  const renderEmployees = () => {
+    // Filter employees based on search and filters
+    const filteredEmployees = employeesData?.employees?.filter(employee => {
+      const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesDepartment = !filterDepartment || employee.department === filterDepartment;
+      const matchesStatus = !filterStatus || employee.status === filterStatus;
+      
+      return matchesSearch && matchesDepartment && matchesStatus;
+    }) || [];
+
+    // Get unique departments for filter
+    const departments = [...new Set(employeesData?.employees?.map(emp => emp.department) || [])];
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Employee Management</h2>
+          <button
+            onClick={fetchEmployeesData}
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Refresh Data'}
+          </button>
+        </div>
+
+        {/* Summary Cards */}
+        {employeesData && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+              <h3 className="text-sm font-medium text-gray-600">Total Employees</h3>
+              <p className="text-2xl font-bold text-gray-900">{employeesData.total_employees}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
+              <h3 className="text-sm font-medium text-gray-600">Meeting 70% Threshold</h3>
+              <p className="text-2xl font-bold text-green-600">
+                {employeesData.employees?.filter(emp => emp.status === 'meets_threshold').length || 0}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
+              <h3 className="text-sm font-medium text-gray-600">Below Threshold</h3>
+              <p className="text-2xl font-bold text-red-600">
+                {employeesData.employees?.filter(emp => emp.status === 'below_threshold').length || 0}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-500">
+              <h3 className="text-sm font-medium text-gray-600">Average Attendance</h3>
+              <p className="text-2xl font-bold text-purple-600">
+                {employeesData.employees?.length > 0 
+                  ? Math.round(employeesData.employees.reduce((sum, emp) => sum + emp.attendance_percentage, 0) / employeesData.employees.length)
+                  : 0}%
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold mb-4">Filters & Search</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <input
+                type="text"
+                placeholder="Search by name, ID, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+              <select
+                value={filterDepartment}
+                onChange={(e) => setFilterDepartment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Attendance Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Status</option>
+                <option value="meets_threshold">Meets Threshold (≥70%)</option>
+                <option value="below_threshold">Below Threshold (&lt;70%)</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterDepartment('');
+                  setFilterStatus('');
+                }}
+                className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 text-sm text-gray-600">
+            Showing {filteredEmployees.length} of {employeesData?.total_employees || 0} employees
+          </div>
+        </div>
+
+        {/* Employee Table */}
+        {employeesData ? (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employee Info
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Department & Position
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Attendance
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Recent Trend
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredEmployees.map((employee, index) => (
+                    <tr key={employee.employee_id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                          <div className="text-sm text-gray-500">{employee.employee_id}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{employee.department}</div>
+                          <div className="text-sm text-gray-500">{employee.position}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm text-gray-900">{employee.email}</div>
+                          <div className="text-sm text-gray-500">{employee.phone}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className={`text-sm font-medium ${getStatusColor(employee.status)}`}>
+                            {employee.attendance_percentage.toFixed(1)}%
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {employee.present_days}P / {employee.absent_days}A / {employee.late_days}L
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {employee.avg_hours}h avg
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={getStatusBadge(employee.status)}>
+                          {employee.status === 'meets_threshold' ? 'Meets' : 'Below'} 70%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          employee.recent_status === 'Excellent' ? 'bg-green-100 text-green-800' :
+                          employee.recent_status === 'Good' ? 'bg-blue-100 text-blue-800' :
+                          employee.recent_status === 'Average' ? 'bg-yellow-100 text-yellow-800' :
+                          employee.recent_status === 'Poor' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {employee.recent_status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {filteredEmployees.length === 0 && (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No employees found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {employeesData?.total_employees === 0 
+                    ? 'Generate sample data to get started.' 
+                    : 'Try adjusting your search or filter criteria.'}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">No Employee Data</h3>
+            <p className="mt-1 text-sm text-gray-500">Generate sample data first to view employee information.</p>
+            <button
+              onClick={generateSampleData}
+              disabled={loading}
+              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              Generate Sample Data
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderResults = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
