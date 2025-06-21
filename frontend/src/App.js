@@ -150,7 +150,7 @@ function App() {
             disabled={loading}
             className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Generating...' : 'Generate Sample Data'}
+            {loading ? 'Generating...' : 'Generate 100 Employees Data'}
           </button>
           <button
             onClick={analyzeAttendance}
