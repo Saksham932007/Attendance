@@ -7,8 +7,12 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardStats, setDashboardStats] = useState(null);
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [employeesData, setEmployeesData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   // Fetch dashboard stats on component mount
   useEffect(() => {
