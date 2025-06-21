@@ -323,7 +323,7 @@ function App() {
             disabled={loading || !dashboardStats?.employees_count}
             className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
           >
-            Run AI Analysis
+            Calculate Attendance
           </button>
           <button
             onClick={getAttendanceReport}
