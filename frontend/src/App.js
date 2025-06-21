@@ -368,13 +368,21 @@ function App() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">Employee Management</h2>
-          <button
-            onClick={fetchEmployeesData}
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : 'Refresh Data'}
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowAddEmployeeModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
+              Add Employee
+            </button>
+            <button
+              onClick={fetchEmployeesData}
+              disabled={loading}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Loading...' : 'Refresh Data'}
+            </button>
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -409,7 +417,7 @@ function App() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-4">Filters & Search</h3>
+          <h3 className="text-lg font-semibold mb-4">Search & Filter Employees</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -489,6 +497,9 @@ function App() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Recent Trend
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -541,6 +552,14 @@ function App() {
                           {employee.recent_status}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => deleteEmployee(employee.employee_id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -555,7 +574,7 @@ function App() {
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No employees found</h3>
                 <p className="mt-1 text-sm text-gray-500">
                   {employeesData?.total_employees === 0 
-                    ? 'Generate sample data to get started.' 
+                    ? 'Generate sample data or add employees manually to get started.' 
                     : 'Try adjusting your search or filter criteria.'}
                 </p>
               </div>
@@ -567,14 +586,114 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             <h3 className="mt-2 text-lg font-medium text-gray-900">No Employee Data</h3>
-            <p className="mt-1 text-sm text-gray-500">Generate sample data first to view employee information.</p>
-            <button
-              onClick={generateSampleData}
-              disabled={loading}
-              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              Generate Sample Data
-            </button>
+            <p className="mt-1 text-sm text-gray-500">Generate sample data or add employees manually to get started.</p>
+            <div className="mt-4 space-x-3">
+              <button
+                onClick={generateSampleData}
+                disabled={loading}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                Generate Sample Data
+              </button>
+              <button
+                onClick={() => setShowAddEmployeeModal(true)}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
+              >
+                Add Employee
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Add Employee Modal */}
+        {showAddEmployeeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Add New Employee</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={addEmployeeForm.name}
+                    onChange={(e) => setAddEmployeeForm({...addEmployeeForm, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="John Smith"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                  <select
+                    value={addEmployeeForm.department}
+                    onChange={(e) => setAddEmployeeForm({...addEmployeeForm, department: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Sales">Sales</option>
+                    <option value="HR">HR</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Customer Service">Customer Service</option>
+                    <option value="Product">Product</option>
+                    <option value="Design">Design</option>
+                    <option value="Legal">Legal</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                  <input
+                    type="text"
+                    value={addEmployeeForm.position}
+                    onChange={(e) => setAddEmployeeForm({...addEmployeeForm, position: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Software Engineer"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={addEmployeeForm.email}
+                    onChange={(e) => setAddEmployeeForm({...addEmployeeForm, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="john.smith@company.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={addEmployeeForm.phone}
+                    onChange={(e) => setAddEmployeeForm({...addEmployeeForm, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex space-x-3">
+                <button
+                  onClick={addEmployee}
+                  disabled={loading || !addEmployeeForm.name || !addEmployeeForm.email}
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  Add Employee
+                </button>
+                <button
+                  onClick={() => setShowAddEmployeeModal(false)}
+                  className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
