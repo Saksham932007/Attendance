@@ -13,6 +13,14 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [addEmployeeForm, setAddEmployeeForm] = useState({
+    name: '',
+    department: '',
+    position: '',
+    email: '',
+    phone: ''
+  });
 
   // Fetch dashboard stats on component mount
   useEffect(() => {
